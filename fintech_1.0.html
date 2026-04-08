@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Sistema Fintech</title>
+
+<style>
+body{
+    font-family: Arial;
+    background:#f4f6f8;
+    display:flex;
+    justify-content:center;
+}
+
+.container{
+    background:white;
+    padding:20px;
+    margin-top:40px;
+    width:400px;
+    border-radius:8px;
+    box-shadow:0 0 10px rgba(0,0,0,0.2);
+}
+
+input,button{
+    width:100%;
+    padding:8px;
+    margin:5px 0;
+}
+
+button{
+    background:#0077cc;
+    color:white;
+    border:none;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#005fa3;
+}
+
+.hidden{
+    display:none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Sistema Fintech</h2>
+
+<div id="app"></div>
+
+</div>
+
+<script>
+
+/* ======================================================
+   CLASE CLIENTE
+====================================================== */
+class Cliente {
+    constructor(nombre, apellido, ci, email, password){
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.ci = ci;
+        this.email = email;
+        this.password = password;
+    }
+}
+
+/* ======================================================
+   CLASE CUENTA
+====================================================== */
+class Cuenta {
+    constructor(cliente){
+        this.id = crypto.randomUUID(); // identificador único
+        this.cliente = cliente;
+        this.saldo = 0;
+        this.movimientos = [];
+    }
+
+    depositar(monto, fecha){
+        this.saldo += monto;
+        this.movimientos.push({tipo:"Depósito", monto, fecha});
+    }
+
+    retirar(monto, fecha){
+        if(monto > this.saldo){
+            alert("El saldo a retirar no es válido. Re-ingrese saldo a retirar.");
+            return false;
+        }
+
+        this.saldo -= monto;
+        this.movimientos.push({tipo:"Retiro", monto, fecha});
+        return true;
+    }
+}
+
+/* ======================================================
+   CLASE SISTEMA FINTECH
+====================================================== */
+class SistemaFintech{
+
+    constructor(){
+        this.cuentas = JSON.parse(localStorage.getItem("cuentas")) || [];
+        this.usuarioActual = null;
+        this.renderLogin();
+    }
+
+    guardar(){
+        localStorage.setItem("cuentas", JSON.stringify(this.cuentas));
+    }
+
+    /* ================= LOGIN ================= */
+
+    renderLogin(){
+        app.innerHTML = `
+        <h3>Iniciar sesión</h3>
+        <input id="email" placeholder="E-mail">
+        <input id="pass" type="password" placeholder="Contraseña">
+        <button onclick="sistema.login()">Entrar</button>
+        <button onclick="sistema.renderRegistro()">Crear cuenta</button>
+        `;
+    }
+
+    login(){
+        const email = emailInput.value;
+        const pass = passInput.value;
+
+        const cuenta = this.cuentas.find(c =>
+            c.cliente.email === email
+        );
+
+        if(!cuenta){
+            alert("El cliente ingresado no existe.");
+            return;
+        }
+
+        if(cuenta.cliente.password !== pass){
+            alert("Usuario o contraseña ingresado/a incorrecto/a.");
+            return;
+        }
+
+        this.usuarioActual = cuenta;
+        this.renderCuenta();
+    }
+
+    /* ================= REGISTRO ================= */
+
+    renderRegistro(){
+        app.innerHTML = `
+        <h3>Crear cuenta</h3>
+        <input id="nombre" placeholder="Nombre">
+        <input id="apellido" placeholder="Apellido">
+        <input id="ci" placeholder="Cédula">
+        <input id="emailR" placeholder="E-mail">
+        <input id="passR" type="password" placeholder="Contraseña">
+        <button onclick="sistema.crearCuenta()">Registrar</button>
+        <button onclick="sistema.renderLogin()">Volver</button>
+        `;
+    }
+
+    crearCuenta(){
+
+        const cliente = new Cliente(
+            nombre.value,
+            apellido.value,
+            ci.value,
+            emailR.value,
+            passR.value
+        );
+
+        const cuenta = new Cuenta(cliente);
+
+        this.cuentas.push(cuenta);
+        this.guardar();
+
+        alert("Cuenta creada. Inicie sesión nuevamente.");
+        this.renderLogin();
+    }
+
+    /* ================= PANEL CUENTA ================= */
+
+    renderCuenta(){
+
+        app.innerHTML = `
+        <h3>Bienvenido ${this.usuarioActual.cliente.nombre}</h3>
+
+        <p><b>ID:</b> ${this.usuarioActual.id}</p>
+        <p><b>Saldo:</b> $${this.usuarioActual.saldo}</p>
+
+        <button onclick="sistema.renderMovimientos()">Movimientos</button>
+        <button onclick="sistema.consultarSaldo()">Consultar saldo</button>
+        <button onclick="sistema.renderEditar()">Modificar cuenta</button>
+        <button onclick="sistema.eliminarCuenta()">Eliminar cuenta</button>
+        <button onclick="sistema.logout()">Cerrar sesión</button>
+        `;
+    }
+
+    /* ================= MOVIMIENTOS ================= */
+
+    renderMovimientos(){
+        app.innerHTML = `
+        <h3>Movimientos</h3>
+
+        <input id="monto" type="number" placeholder="Monto">
+        <input id="fecha" type="date">
+
+        <button onclick="sistema.depositar()">Depositar</button>
+        <button onclick="sistema.retirar()">Retirar</button>
+        <button onclick="sistema.renderCuenta()">Volver</button>
+        `;
+    }
+
+    depositar(){
+        const monto = Number(montoInput.value);
+        const fecha = fechaInput.value;
+
+        this.usuarioActual.depositar(monto, fecha);
+        this.guardar();
+        this.renderCuenta();
+    }
+
+    retirar(){
+        const monto = Number(montoInput.value);
+        const fecha = fechaInput.value;
+
+        if(this.usuarioActual.retirar(monto, fecha)){
+            this.guardar();
+            this.renderCuenta();
+        }
+    }
+
+    /* ================= CONSULTAR SALDO ================= */
+
+    consultarSaldo(){
+        alert("Saldo actual: $" + this.usuarioActual.saldo);
+    }
+
+    /* ================= EDITAR ================= */
+
+    renderEditar(){
+        const c = this.usuarioActual.cliente;
+
+        app.innerHTML = `
+        <h3>Modificar cuenta</h3>
+
+        <input id="nombreE" value="${c.nombre}">
+        <input id="apellidoE" value="${c.apellido}">
+        <input id="ciE" value="${c.ci}">
+        <input id="emailE" value="${c.email}">
+        <input id="passE" value="${c.password}">
+
+        <button onclick="sistema.guardarEdicion()">Guardar</button>
+        <button onclick="sistema.renderCuenta()">Volver</button>
+        `;
+    }
+
+    guardarEdicion(){
+        const c = this.usuarioActual.cliente;
+
+        c.nombre = nombreE.value;
+        c.apellido = apellidoE.value;
+        c.ci = ciE.value;
+        c.email = emailE.value;
+        c.password = passE.value;
+
+        this.guardar();
+        this.renderCuenta();
+    }
+
+    /* ================= ELIMINAR ================= */
+
+    eliminarCuenta(){
+
+        if(!confirm("¿Seguro desea eliminar la cuenta?")) return;
+
+        this.cuentas = this.cuentas.filter(
+            c => c.id !== this.usuarioActual.id
+        );
+
+        this.guardar();
+        this.usuarioActual = null;
+
+        alert("Cuenta eliminada.");
+        this.renderLogin();
+    }
+
+    /* ================= LOGOUT ================= */
+
+    logout(){
+        this.usuarioActual = null;
+        this.renderLogin();
+    }
+}
+
+/* ======================================================
+   INICIALIZACIÓN
+====================================================== */
+
+const app = document.getElementById("app");
+const sistema = new SistemaFintech();
+
+/* helpers inputs */
+Object.defineProperty(window,"emailInput",{get:()=>document.getElementById("email")});
+Object.defineProperty(window,"passInput",{get:()=>document.getElementById("pass")});
+Object.defineProperty(window,"montoInput",{get:()=>document.getElementById("monto")});
+Object.defineProperty(window,"fechaInput",{get:()=>document.getElementById("fecha")});
+
+</script>
+</body>
+</html>
