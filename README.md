@@ -1,5 +1,7 @@
 If you want to prove that code, you can put the code in a file.txt and save as html, then start file.html.
 I give u the prompt that i gave to IA.
+I´m learning programming so, probably, the code or the prompt could have mistakes.
+Thanks for read me :)
 
 Prompt:
 I speak spanish so the prompt is in spanish also. You can translate it or maybe ask to ChatGPT
